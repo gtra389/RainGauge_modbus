@@ -63,7 +63,7 @@ while True:
     boolTemp2 = rfRead()
     rfDep = rfDepth(boolTemp2) # Unit in mm    
 
-    if abs(delSec - 10) < 10e-1:  
+    if abs(delSec - 600) < 10e-1:  
         rfInts = rfDep/(600/3600)
         start  = end   
         countVal  = 0
