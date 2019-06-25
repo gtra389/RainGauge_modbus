@@ -11,7 +11,7 @@ import minimalmodbus
 import time
 
 minimalmodbus.BAUDRATE = 19200
-slaveAddr = "2"
+slaveAddr = 2
 devName = '/dev/ttyUSB0' # RPI    format
 comName = 'COM37'        # Window format
 
