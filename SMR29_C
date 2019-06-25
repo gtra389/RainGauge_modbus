@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+#
+# Available device: Tipping-bucket Rain gauge
+# Product number: SMR29-C
+# Serial communication protocol: RS485
+# Purpose:
+# Measure rainfall intensity every 10 mins (Unit in mm/hr)
+#
+
+import minimalmodbus
+import time
+
+minimalmodbus.BAUDRATE = 19200
+slaveAddr = "2"
+devName = '/dev/ttyUSB0' # RPI    format
+comName = 'COM37'        # Window format
+
+start = time.time()
+befVal    = 8888
+countVal  = 0
+bucketVal = 0.2  # Unit in mm
+rfInts    = 0    # Unit in mm/hr
+
+def rfRead():
+    global befVal
+    # Port name, slave address (in decimal)
+    instrument_2 = minimalmodbus.Instrument(comName, slaveAddr) 
+    try:
+        # Register number, number of decimals, function code
+        rf_realVal = instrument_2.read_register(0, 0, 4)               
+    except IOError:
+        print("Failed to read from instrument")
+        print('------------------------')    
+    
+    rf_refVal   = [0, 13107, 26215, 39322, 52429]
+    boolTemp1   = rf_realVal in rf_refVal
+    while boolTemp1:
+        if (rf_realVal != befVal):
+            print("Detect additional rainfall")
+            print('------------------------')
+            befVal = rf_realVal
+            break
+        else:
+            boolTemp1 = not boolTemp1
+            break
+    print("Additional rainfall (T/F):",boolTemp1)
+    print("Read value:", rf_realVal)
+    print("Previous value:", befVal)
+    print('------------------------')
+    return boolTemp1
+
+def rfDepth(arg1):
+    global countVal, bucketVal    
+    while (arg1):        
+        countVal +=1        
+        break
+    rfDep  = countVal * bucketVal 
+    return rfDep
+
+while True:
+    end = time.time()
+    delSec = end - start # Unit in sec
+    boolTemp2 = rfRead()
+    rfDep = rfDepth(boolTemp2) # Unit in mm    
+
+    if abs(delSec - 10) < 10e-1:  
+        rfInts = rfDep/(600/3600)
+        start  = end   
+        countVal  = 0
+        print('Rainfall intensity:',rfInts,' mm/hr')
+        print('------------------------')
+    else:
+        print(time.asctime( time.localtime(start)))
+        print(time.asctime( time.localtime(end)))
+        print('------------------------')
+    time.sleep(1) 
