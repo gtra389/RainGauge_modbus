@@ -7,24 +7,28 @@
 # Measure rainfall intensity every 10 mins (Unit in mm/hr)
 #
 
+# Including
 import minimalmodbus
 import time
 
+# Definition of variable
 minimalmodbus.BAUDRATE = 19200
-slaveAddr = 2
+rg_slaveAddr = 2
 devName = '/dev/ttyUSB0' # RPI    format
 comName = 'COM37'        # Window format
+id_No = "8999"
+countNum_Loop = -1
 
-start = time.time()
 befVal    = 8888
 countVal  = 0
 bucketVal = 0.2  # Unit in mm
 rfInts    = 0    # Unit in mm/hr
 
+
 def rfRead():
-    global befVal
+    global befValLRaow
     # Port name, slave address (in decimal)
-    instrument_2 = minimalmodbus.Instrument(comName, slaveAddr) 
+    instrument_2 = minimalmodbus.Instrument(comName, rg_slaveAddr) 
     try:
         # Register number, number of decimals, function code
         rf_realVal = instrument_2.read_register(0, 0, 4)               
@@ -39,38 +43,85 @@ def rfRead():
             print("Detect additional rainfall")
             print('------------------------')
             befVal = rf_realVal
+            countVal += 1
+            rfDep = countVal * bucketVal
             break
         else:
             boolTemp1 = not boolTemp1
             break
     print("Additional rainfall (T/F):",boolTemp1)
-    print("Read value:", rf_realVal)
-    print("Previous value:", befVal)
-    print('------------------------')
-    return boolTemp1
-
-def rfDepth(arg1):
-    global countVal, bucketVal    
-    while (arg1):        
-        countVal +=1        
-        break
-    rfDep  = countVal * bucketVal 
+    # print("Read value:", rf_realVal)
+    # print("Previous value:", befVal)
+    print('------------------------')     
     return rfDep
 
-while True:
-    end = time.time()
-    delSec = end - start # Unit in sec
-    boolTemp2 = rfRead()
-    rfDep = rfDepth(boolTemp2) # Unit in mm    
+def httpPOST(String0, String1, String2, String3):    
+    try:
+        global timeStamp
+        timeStamp = strftime("%Y%m%d%H%M%S")
+        url = 'http://ec2-54-175-179-28.compute-1.amazonaws.com/update_general.php?' + \
+              'site=Demo&' + \
+              'time='+ repr(timeStamp)+ \
+              '&weather=0' + \
+              '&id='+ repr(String0) + \
+              '&air=0' + \
+              '&acceleration=0' + \
+              '&cleavage=0' + \
+              '&incline=0' + \
+              '&field1='+repr(String1)+ \
+              '&field2='+repr(String2)+ \
+              '&field3='+repr(String3)
+        
+        url_TT ='http://data.thinktronltd.com/TCGEMSIS/GETMTDATA.aspx?' + \
+              'site=Demo&' + \
+              'time='+ repr(timeStamp)+ \
+              '&weather=0' + \
+              '&id='+ repr(String0) + \
+              '&air=0' + \
+              '&acceleration=0' + \
+              '&cleavage=0' + \
+              '&incline=0' + \
+              '&field1='+repr(String1)+ \
+              '&field2='+repr(String2)+ \
+              '&field3='+repr(String3) 
+        
+        resp = urlopen(url).read()
+        resp_TT = urlopen(url_TT).read()
+        print(resp)
+        print(resp_TT)
+        print('------------------------')
+    except:
+        print('We have an error!')
+        time.sleep(30) # Wait for 30 sec
+        resp = urlopen(url).read()
+        print(resp)
+        print('------------------------')
+try:
+    while True:
+        end = time.time()
+        delSec = end - start # Unit in sec    
+        rfDep = rfRead() # Unit in mm    
 
-    if abs(delSec - 600) < 10e-1:  
-        rfInts = rfDep/(600/3600)
-        start  = end   
-        countVal  = 0
-        print('Rainfall intensity:',rfInts,' mm/hr')
-        print('------------------------')
-    else:
-        print(time.asctime( time.localtime(start)))
-        print(time.asctime( time.localtime(end)))
-        print('------------------------')
-    time.sleep(1) 
+        if (delSec - 600) > 0:  
+            rfInts = rfDep/(600/3600) # Unit in mm/hr every 10 mins
+            start  = end   
+            countVal  = 0
+            data1 = rfInts 
+            data2 = 0
+
+            while (countNum_Loop < 0):
+                httpPOST(id_No, data1, data2, "Reboot")
+                countNum_Loop += 1
+
+            httpPOST(id_No, data1, data2, 0)        
+            print('Rainfall intensity:',rfInts,' mm/hr')
+            print("Upload time : %s" % timeStamp)    
+            print('------------------------')        
+        else:
+            minimalmodbus.CLOSE_PORT_AFTER_EACH_CALL=True
+        time.sleep(10) # Wait for 10 sec
+        
+except KeyboardInterrupt:
+    print('------------------------')
+    print("Stop")
+    print('------------------------')
