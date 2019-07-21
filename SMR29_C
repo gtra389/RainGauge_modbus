@@ -26,7 +26,7 @@ rfInts    = 0    # Unit in mm/hr
 
 
 def rfRead():
-    global befValLRaow
+    global befVal
     # Port name, slave address (in decimal)
     instrument_2 = minimalmodbus.Instrument(comName, rg_slaveAddr) 
     try:
