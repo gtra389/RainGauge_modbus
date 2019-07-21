@@ -100,7 +100,13 @@ try:
     while True:
         end = time.time()
         delSec = end - start # Unit in sec    
-        rfDep = rfRead() # Unit in mm    
+        rfDep = rfRead() # Unit in mm
+        
+        while (countNum_Loop < 0):
+            httpPOST(id_No, 0, 0, "Reboot")
+            countNum_Loop += 1
+            minimalmodbus.CLOSE_PORT_AFTER_EACH_CALL=True
+            break
 
         if (delSec - 600) > 0:  
             rfInts = rfDep/(600/3600) # Unit in mm/hr every 10 mins
@@ -108,11 +114,6 @@ try:
             countVal  = 0
             data1 = rfInts 
             data2 = 0
-
-            while (countNum_Loop < 0):
-                httpPOST(id_No, data1, data2, "Reboot")
-                countNum_Loop += 1
-
             httpPOST(id_No, data1, data2, 0)        
             print('Rainfall intensity:',rfInts,' mm/hr')
             print("Upload time : %s" % timeStamp)    
