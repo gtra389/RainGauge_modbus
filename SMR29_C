@@ -35,7 +35,8 @@ def rfRead():
     global befVal, countVal, rfDep
     rf_realVal = 0    
     # Port name, slave address (in decimal)
-    instrument_2 = minimalmodbus.Instrument(comName, rg_slaveAddr) 
+    # instrument_2 = minimalmodbus.Instrument(comName, rg_slaveAddr) 
+    instrument_2 = minimalmodbus.Instrument(devName, rg_slaveAddr) 
     try:
         # Register number, number of decimals, function code
         rf_realVal = instrument_2.read_register(0, 0, 4)               
